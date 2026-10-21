@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Toda la logica de sOC Scanner que no toca el hardware: ajustes, calidades y su ajuste a lo que
+    admite cada aparato, nombres correlativos, el documento de varias hojas, el tratamiento de la
+    imagen (gris, blanco y negro, giro, brillo), los formatos de salida (PDF propio, JPG, PNG, TIFF,
+    BMP), el escaner simulado del modo aislado y los textos. Es lo que mide el banco de pruebas.
+    Usa solo la parte de imagen de WPF (PresentationCore), sin ventanas.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>SocScanner</RootNamespace>
+    <AssemblyName>Scanner.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UseWPF quita System.IO de los using implicitos. -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Scanner.Tests" />
+    <EmbeddedResource Include="whatsnew.json" LogicalName="SocScanner.whatsnew.json" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    sOCScanner.exe: la ventana (origen, calidad, modo una a una o en serie, vista previa y hojas), los
+    dialogos de calidad, guia, novedades y «Acerca de». La logica esta en Scanner.Core y el hardware en
+    Scanner.Engine; aqui solo la interfaz.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>SocScanner.App</RootNamespace>
+    <AssemblyName>sOCScanner</AssemblyName>
+    <ApplicationTitle>sOC Scanner</ApplicationTitle>
+    <ApplicationIcon>appicon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UseWPF quita System.IO de los using implicitos. -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scanner.Core\Scanner.Core.csproj" />
+    <ProjectReference Include="..\Scanner.Engine\Scanner.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\logo.png" />
+    <Resource Include="appicon.ico" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Lo que toca el hardware, con las API de Windows: los escaneres (Windows.Devices.Scanners, que cubre
+    WIA, WSD y eSCL: USB y red, cristal y alimentador) y las camaras (Windows.Media.Capture, vista en
+    directo y foto). Todo detras de IScanDevice (Scanner.Core).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>SocScanner.Engine</RootNamespace>
+    <AssemblyName>Scanner.Engine</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UseWPF quita System.IO de los using implicitos. -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scanner.Core\Scanner.Core.csproj" />
+  </ItemGroup>
+
+</Project>

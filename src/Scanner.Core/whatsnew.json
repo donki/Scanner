@@ -1,0 +1,18 @@
+[
+  {
+    "version": "2026.10.21.0",
+    "date": "2026-10-21",
+    "es": [
+      "Primera versión: escanea con cualquier escáner que reconozca Windows (por USB o por red, del cristal o del alimentador) o con una cámara, con un solo botón.",
+      "Calidades a un clic (texto en blanco y negro, documento, documento en color, foto) o a medida: resolución, color, brillo, contraste, tamaño de la hoja y calidad JPEG.",
+      "Una a una: escaneas, miras la vista previa, giras, ordenas o quitas hojas y guardas en PDF (todas las hojas en un fichero), JPG, PNG, TIFF o BMP.",
+      "En serie: pones una hoja, pulsas el botón (o Intro) y se guarda sola en la carpeta y el formato fijados, con nombre correlativo y el prefijo o el sufijo que quieras."
+    ],
+    "en": [
+      "First version: scans with any scanner Windows recognises (USB or network, glass or feeder) or with a camera, with a single button.",
+      "One-click qualities (black-and-white text, document, colour document, photo) or your own: resolution, colour, brightness, contrast, page size and JPEG quality.",
+      "One at a time: scan, check the preview, rotate, reorder or remove pages and save as PDF (all pages in one file), JPG, PNG, TIFF or BMP.",
+      "Batch: place a sheet, press the button (or Enter) and it is saved on its own to the folder and format you set, with a sequential name and the prefix or suffix you want."
+    ]
+  }
+]
