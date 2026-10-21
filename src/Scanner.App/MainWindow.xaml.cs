@@ -43,6 +43,7 @@ public partial class MainWindow : Window
     private bool _framePending;
     private bool _loading = true;
     private bool _busy;
+    private bool _committing;
     private int _deviceRequest;
     private IReadOnlyList<string> _lastSaved = [];
 
@@ -51,7 +52,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         if (Sandbox.IsOn)
             Title += " [SOC_SANDBOX]";
-        LogoImage.Source = new BitmapImage(new Uri("pack://application:,,,/Assets/logo.png"));
+        LogoImage.Source = new BitmapImage(new Uri("pack://application:,,,/sOCScanner;component/Assets/logo.png"));
         SourceInitialized += OnSourceInitialized;
         Loaded += OnLoaded;
         Closing += OnClosing;
@@ -126,7 +127,7 @@ public partial class MainWindow : Window
     {
         if ((uint)msg == SingleInstance.ShowMessage)
         {
-            App.Instance.ShowMain();
+            App.Instance?.ShowMain();
             SingleInstance.NotifyShown();
             handled = true;
         }
@@ -155,7 +156,7 @@ public partial class MainWindow : Window
         {
             // La ventana anterior (al cambiar de idioma) suelta antes la cámara: no se puede abrir dos veces.
             await App.DeviceReleased;
-            _devices = await DeviceCatalog.ListAsync(Sandbox.IsOn, Loc.Get("SimulatedScanner"));
+            _devices = await DeviceCatalog.ListAsync(App.SimulatedDevices);
         }
         finally
         {
@@ -214,7 +215,7 @@ public partial class MainWindow : Window
             try { await oldLive.StopPreviewAsync(); }
             catch (Exception ex) { AppLog.Write($"parar la cámara: {ex.Message}"); }
         }
-        if (old is not null && old != App.Simulated)
+        if (old is not null && !DeviceCatalog.IsSimulated(old, App.SimulatedDevices))
             old.Dispose();
         _live = null;
         LiveBadge.Visibility = Visibility.Collapsed;
@@ -228,7 +229,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var device = DeviceCatalog.Open(info, App.Simulated);
+        var device = DeviceCatalog.Open(info, App.SimulatedDevices);
         _device = device;
         DeviceInfoText.Text = Loc.Get("DeviceChecking");
         UpdateButtons();
@@ -355,7 +356,7 @@ public partial class MainWindow : Window
     private void OnQuality(object sender, RoutedEventArgs e)
     {
         var dialog = new QualityWindow(App.Settings.EffectiveQuality(), _caps, _device?.Info.Kind ?? DeviceKind.Scanner) { Owner = this };
-        if (dialog.ShowDialog() != true)
+        if (Dialogs.ShowModal(dialog) != true)
             return;
         App.Settings.Preset = QualityPreset.Custom;
         App.Settings.CustomQuality = dialog.Result;
@@ -436,19 +437,16 @@ public partial class MainWindow : Window
 
     private void OnBrowseBatchFolder(object sender, RoutedEventArgs e)
     {
-        var dialog = new Microsoft.Win32.OpenFolderDialog { Title = Loc.Get("BrowseFolder") };
-        if (Directory.Exists(App.Settings.BatchFolder))
-            dialog.InitialDirectory = App.Settings.BatchFolder;
-        if (dialog.ShowDialog(this) != true)
+        if (Dialogs.PickFolder(this, Loc.Get("BrowseFolder"), App.Settings.BatchFolder) is not { } folder)
             return;
-        if (ScannerSettings.CheckFolder(dialog.FolderName) is { } problem)
+        if (ScannerSettings.CheckFolder(folder) is { } problem)
         {
             PromptWindow.Alert(this, Loc.Get("ErrorTitle"), Loc.Get(problem));
             return;
         }
-        App.Settings.BatchFolder = dialog.FolderName;
+        App.Settings.BatchFolder = folder;
         App.Settings.Save();
-        BatchFolderBox.Text = dialog.FolderName;
+        BatchFolderBox.Text = folder;
         UpdateBatchNext();
     }
 
@@ -477,7 +475,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnBatchFieldCommit(object sender, RoutedEventArgs e) => CommitBatchFields();
+    /// <summary>
+    /// Al salir de la casilla se valida cuando haya terminado el cambio de foco: un aviso abierto en
+    /// mitad de él se queda sin pintar y la ventana parece colgada.
+    /// </summary>
+    private void OnBatchFieldCommit(object sender, RoutedEventArgs e) =>
+        Dispatcher.BeginInvoke(() => CommitBatchFields(), System.Windows.Threading.DispatcherPriority.Background);
 
     /// <summary>
     /// Prefijo, sufijo y número se aplican al salir de la casilla o con Intro (General §6.8); si no
@@ -485,8 +488,24 @@ public partial class MainWindow : Window
     /// </summary>
     private bool CommitBatchFields()
     {
+        // Al abrirse el aviso la casilla pierde el foco y volvería a entrar aquí con otro aviso encima.
+        if (_committing)
+            return false;
         if (_loading)
             return true;
+        _committing = true;
+        try
+        {
+            return CommitBatchFieldsCore();
+        }
+        finally
+        {
+            _committing = false;
+        }
+    }
+
+    private bool CommitBatchFieldsCore()
+    {
         var s = App.Settings;
         string? problem = FileNaming.CheckAffix(BatchPrefixBox.Text) ?? FileNaming.CheckAffix(BatchSuffixBox.Text);
         var numberOk = int.TryParse(BatchNumberBox.Text.Trim(), NumberStyles.Integer, CultureInfo.CurrentCulture, out var number) && number >= 0 && number <= 999_999_999;
@@ -729,21 +748,16 @@ public partial class MainWindow : Window
         if (_workflow.Document.IsEmpty || _busy)
             return;
         var s = App.Settings;
-        var dialog = new Microsoft.Win32.SaveFileDialog
-        {
-            Title = Loc.Get("ActionSave"),
-            Filter = OutputFormats.DialogFilter(),
-            FilterIndex = OutputFormats.All.ToList().IndexOf(s.SingleFormat) + 1,
-            FileName = FileNaming.TimestampName(Loc.Get("FilePrefix"), DateTime.Now),
-            AddExtension = true,
-            OverwritePrompt = true,
-        };
-        if (ScannerSettings.CheckFolder(s.SaveFolder) is null)
-            dialog.InitialDirectory = s.SaveFolder;
-        if (dialog.ShowDialog(this) != true)
+        var request = new SaveFileRequest(
+            Loc.Get("ActionSave"),
+            OutputFormats.DialogFilter(),
+            OutputFormats.All.ToList().IndexOf(s.SingleFormat) + 1,
+            FileNaming.TimestampName(Loc.Get("FilePrefix"), DateTime.Now),
+            ScannerSettings.CheckFolder(s.SaveFolder) is null ? s.SaveFolder : null);
+        if (Dialogs.PickSaveFile(this, request) is not var (picked, filterIndex))
             return;
-        var format = OutputFormats.FromExtension(Path.GetExtension(dialog.FileName)) ?? OutputFormats.All[Math.Clamp(dialog.FilterIndex - 1, 0, OutputFormats.All.Count - 1)];
-        var path = Path.ChangeExtension(dialog.FileName, OutputFormats.Extension(format));
+        var format = OutputFormats.FromExtension(Path.GetExtension(picked)) ?? OutputFormats.All[Math.Clamp(filterIndex - 1, 0, OutputFormats.All.Count - 1)];
+        var path = Path.ChangeExtension(picked, OutputFormats.Extension(format));
         await SaveDocumentAsync(path, format);
     }
 
@@ -879,7 +893,7 @@ public partial class MainWindow : Window
         {
             var list = new StringCollection();
             list.AddRange(files);
-            Clipboard.SetFileDropList(list);
+            Dialogs.CopyFiles(list);
             DetailText.Text = Loc.Get("CopiedFile");
         }
         catch (Exception ex)
@@ -926,13 +940,13 @@ public partial class MainWindow : Window
 
     // ------------------------------------------------------------------ cabecera
 
-    private void OnGuide(object sender, RoutedEventArgs e) => new GuideWindow(_devices.Count) { Owner = this }.ShowDialog();
+    private void OnGuide(object sender, RoutedEventArgs e) => Dialogs.ShowModal(new GuideWindow(_devices.Count) { Owner = this });
 
-    private void OnNews(object sender, RoutedEventArgs e) => new WhatsNewWindow { Owner = this }.ShowDialog();
+    private void OnNews(object sender, RoutedEventArgs e) => Dialogs.ShowModal(new WhatsNewWindow { Owner = this });
 
     private void OnLanguage(object sender, RoutedEventArgs e) => Loc.Toggle();
 
-    private void OnAbout(object sender, RoutedEventArgs e) => new AboutWindow { Owner = this }.ShowDialog();
+    private void OnAbout(object sender, RoutedEventArgs e) => Dialogs.ShowModal(new AboutWindow { Owner = this });
 
     // ------------------------------------------------------------------ cerrar
 
@@ -961,7 +975,7 @@ public partial class MainWindow : Window
         _workflow.Document.Changed -= OnDocumentChanged;
         App.DeviceReleased = ReleaseDeviceAsync();
         if (!App.Rebuilding)
-            App.Instance.Shutdown();
+            App.Instance?.Shutdown();   // en el banco de pruebas no hay App arrancada: no se apaga nada
     }
 
     private async Task ReleaseDeviceAsync()
@@ -978,7 +992,7 @@ public static class Shell
     {
         try
         {
-            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            Dialogs.Start(new ProcessStartInfo(path) { UseShellExecute = true });
         }
         catch (Exception ex)
         {
@@ -992,7 +1006,7 @@ public static class Shell
         try
         {
             if (File.Exists(path))
-                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+                Dialogs.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
             else
                 Open(owner, Path.GetDirectoryName(path) ?? path);
         }

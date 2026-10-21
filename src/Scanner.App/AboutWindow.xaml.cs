@@ -17,7 +17,7 @@ public partial class AboutWindow : Window
     {
         InitializeComponent();
         SourceInitialized += (_, _) => ThemeManager.ApplyToWindow(this);
-        LogoImage.Source = new BitmapImage(new Uri("pack://application:,,,/Assets/logo.png"));
+        LogoImage.Source = new BitmapImage(new Uri("pack://application:,,,/sOCScanner;component/Assets/logo.png"));
         VersionLabel.Text = "v" + WhatsNew.CurrentVersion();
         PaintLanguageButtons();
     }
@@ -38,7 +38,7 @@ public partial class AboutWindow : Window
     {
         try
         {
-            Process.Start(new ProcessStartInfo(ContactAddress) { UseShellExecute = true });
+            Dialogs.Start(new ProcessStartInfo(ContactAddress) { UseShellExecute = true });
         }
         catch (Exception ex)
         {
@@ -47,7 +47,7 @@ public partial class AboutWindow : Window
         }
     }
 
-    private void OnNewsClick(object sender, RoutedEventArgs e) => new WhatsNewWindow { Owner = this }.ShowDialog();
+    private void OnNewsClick(object sender, RoutedEventArgs e) => Dialogs.ShowModal(new WhatsNewWindow { Owner = this });
 
     private void OnSpanishClick(object sender, RoutedEventArgs e) => Use("es");
 
@@ -63,7 +63,7 @@ public partial class AboutWindow : Window
         Application.Current.Dispatcher.BeginInvoke(() =>
         {
             Loc.Use(language);
-            new AboutWindow { Owner = App.MainView }.ShowDialog();
+            Dialogs.ShowModal(new AboutWindow { Owner = App.MainView });
         });
     }
 

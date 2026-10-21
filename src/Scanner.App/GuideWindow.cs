@@ -64,7 +64,7 @@ public sealed class GuideWindow : Window
                 () =>
                 {
                     var dialog = new QualityWindow(s.EffectiveQuality(), null, DeviceKind.Scanner) { Owner = this };
-                    if (dialog.ShowDialog() == true)
+                    if (Dialogs.ShowModal(dialog) == true)
                     {
                         s.Preset = QualityPreset.Custom;
                         s.CustomQuality = dialog.Result;
@@ -75,10 +75,9 @@ public sealed class GuideWindow : Window
                 () => ScannerSettings.CheckFolder(s.BatchFolder) is null ? StepState.Done : StepState.Pending,
                 () =>
                 {
-                    var d = new Microsoft.Win32.OpenFolderDialog { Title = Loc.Get("BrowseFolder") };
-                    if (d.ShowDialog(this) == true && ScannerSettings.CheckFolder(d.FolderName) is null)
+                    if (Dialogs.PickFolder(this, Loc.Get("BrowseFolder"), s.BatchFolder) is { } folder && ScannerSettings.CheckFolder(folder) is null)
                     {
-                        s.BatchFolder = d.FolderName;
+                        s.BatchFolder = folder;
                         s.Save();
                     }
                 }),
@@ -156,7 +155,7 @@ public sealed class GuideWindow : Window
 
     private void OpenSettings(string uri)
     {
-        try { Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true }); }
+        try { Dialogs.Start(new ProcessStartInfo(uri) { UseShellExecute = true }); }
         catch (Exception ex)
         {
             AppLog.Write($"abrir {uri}: {ex.Message}");

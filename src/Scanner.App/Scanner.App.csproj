@@ -25,6 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Scanner.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Scanner.Core\Scanner.Core.csproj" />
     <ProjectReference Include="..\Scanner.Engine\Scanner.Engine.csproj" />
   </ItemGroup>

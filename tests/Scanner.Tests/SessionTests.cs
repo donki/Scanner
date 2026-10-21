@@ -225,16 +225,23 @@ public sealed class SessionTests
     }
 
     [Fact]
-    public async Task El_catalogo_en_modo_aislado_solo_tiene_el_simulado()
+    public async Task El_catalogo_en_modo_aislado_solo_tiene_los_simulados()
     {
-        var list = await DeviceCatalog.ListAsync(sandbox: true, "Prueba");
-        var only = Assert.Single(list);
-        Assert.Equal((SimulatedScanner.DeviceId, "Prueba", DeviceKind.Simulated), (only.Id, only.Name, only.Kind));
-        var sim = new SimulatedScanner();
-        Assert.Same(sim, DeviceCatalog.Open(only, sim));
-        Assert.IsType<SimulatedScanner>(DeviceCatalog.Open(only));
-        using var cam = DeviceCatalog.Open(new ScanDeviceInfo("x", "c", DeviceKind.Camera));
-        Assert.IsType<CameraDevice>(cam);
+        var sim = new SimulatedScanner("Prueba");
+        var cam = new SimulatedCamera("Cámara");
+        IScanDevice[] simulated = [sim, cam];
+        var list = await DeviceCatalog.ListAsync(simulated);
+        Assert.Equal(2, list.Count);
+        Assert.Equal((SimulatedScanner.DeviceId, "Prueba", DeviceKind.Simulated), (list[0].Id, list[0].Name, list[0].Kind));
+        Assert.Equal((SimulatedCamera.DeviceId, DeviceKind.Camera), (list[1].Id, list[1].Kind));
+        Assert.Same(sim, DeviceCatalog.Open(list[0], simulated));
+        Assert.Same(cam, DeviceCatalog.Open(list[1], simulated));
+        Assert.True(DeviceCatalog.IsSimulated(cam, simulated));
+        Assert.False(DeviceCatalog.IsSimulated(new SimulatedScanner(), simulated));
+        Assert.False(DeviceCatalog.IsSimulated(sim, null));
+        Assert.IsType<SimulatedScanner>(DeviceCatalog.Open(list[0]));
+        using var realCam = DeviceCatalog.Open(new ScanDeviceInfo("x", "c", DeviceKind.Camera));
+        Assert.IsType<CameraDevice>(realCam);
         using var scanner = DeviceCatalog.Open(new ScanDeviceInfo("y", "s", DeviceKind.Scanner));
         Assert.IsType<WinRtScanner>(scanner);
     }

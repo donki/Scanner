@@ -4,7 +4,9 @@
     Banco de pruebas de sOC Scanner (General 8.6): la logica de Scanner.Core (calidades y su ajuste a
     cada dispositivo, nombres, PDF propio, formatos, imagen, documento, flujo de escanear con el
     escaner simulado, ajustes y textos). Detras de SOC_SCAN_INTEGRATION=1, una prueba que escanea de
-    verdad con el primer escaner que vea Windows (a 100 ppp, sin guardar nada).
+    verdad con cada escaner que vea Windows (a 100 ppp, sin guardar nada) y toma una imagen con la
+    primera camara. Tambien las ventanas de la aplicacion, en un hilo STA propio, fuera de la pantalla
+    y contra dobles de los dialogos de Windows (Ui.cs).
   -->
   <PropertyGroup>
     <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
@@ -35,6 +37,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Scanner.Core\Scanner.Core.csproj" />
     <ProjectReference Include="..\..\src\Scanner.Engine\Scanner.Engine.csproj" />
+    <!-- La aplicación entera: sus ventanas se prueban aquí, en un hilo STA propio (Ui.cs). -->
+    <ProjectReference Include="..\..\src\Scanner.App\Scanner.App.csproj" />
   </ItemGroup>
 
 </Project>

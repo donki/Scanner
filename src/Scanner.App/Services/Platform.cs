@@ -65,7 +65,7 @@ public static class ThemeManager
 
     private static readonly Lazy<ImageSource?> AppIcon = new(() =>
     {
-        try { return System.Windows.Media.Imaging.BitmapFrame.Create(new Uri("pack://application:,,,/appicon.ico")); }
+        try { return System.Windows.Media.Imaging.BitmapFrame.Create(new Uri("pack://application:,,,/sOCScanner;component/appicon.ico")); }
         catch (Exception) { return null; }
     });
 

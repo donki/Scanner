@@ -78,8 +78,8 @@ public sealed class PromptWindow : Window
     private void Accept() => DialogResult = true;
 
     public static void Alert(Window? owner, string title, string message) =>
-        new PromptWindow(owner, title, message, Kind.Alert).ShowDialog();
+        Dialogs.ShowModal(new PromptWindow(owner, title, message, Kind.Alert));
 
     public static bool Confirm(Window? owner, string title, string message, bool danger) =>
-        new PromptWindow(owner, title, message, danger ? Kind.Danger : Kind.Confirm).ShowDialog() == true;
+        Dialogs.ShowModal(new PromptWindow(owner, title, message, danger ? Kind.Danger : Kind.Confirm)) == true;
 }

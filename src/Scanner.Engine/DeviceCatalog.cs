@@ -5,14 +5,14 @@ namespace SocScanner.Engine;
 
 /// <summary>
 /// La lista de dispositivos: primero los escáneres y luego las cámaras. En el modo aislado (pruebas)
-/// solo el escáner simulado, para no tocar nada real (General §8.4).
+/// solo el escáner y la cámara simulados, para no tocar nada real (General §8.4).
 /// </summary>
 public static class DeviceCatalog
 {
-    public static async Task<IReadOnlyList<ScanDeviceInfo>> ListAsync(bool sandbox, string simulatedName)
+    public static async Task<IReadOnlyList<ScanDeviceInfo>> ListAsync(IReadOnlyCollection<IScanDevice>? simulated)
     {
-        if (sandbox)
-            return [new ScanDeviceInfo(SimulatedScanner.DeviceId, simulatedName, DeviceKind.Simulated)];
+        if (simulated is not null)
+            return [.. simulated.Select(d => d.Info)];
         var list = new List<ScanDeviceInfo>();
         try { list.AddRange(await WinRtScanner.ListAsync()); }
         catch (Exception ex) { AppLog.Write($"no se pudieron listar los escáneres: {ex}"); }
@@ -21,10 +21,16 @@ public static class DeviceCatalog
         return list;
     }
 
-    public static IScanDevice Open(ScanDeviceInfo info, SimulatedScanner? simulated = null) => info.Kind switch
-    {
-        DeviceKind.Camera => new CameraDevice(info),
-        DeviceKind.Simulated => simulated ?? new SimulatedScanner(info.Name),
-        _ => new WinRtScanner(info),
-    };
+    /// <summary>Abre el dispositivo de la lista; los simulados son siempre los mismos (no se crean otros).</summary>
+    public static IScanDevice Open(ScanDeviceInfo info, IReadOnlyCollection<IScanDevice>? simulated = null) =>
+        simulated?.FirstOrDefault(d => d.Info.Id == info.Id) ?? info.Kind switch
+        {
+            DeviceKind.Camera => new CameraDevice(info),
+            DeviceKind.Simulated => new SimulatedScanner(info.Name),
+            _ => new WinRtScanner(info),
+        };
+
+    /// <summary>¿Es uno de los simulados (que no se sueltan al cambiar de dispositivo)?</summary>
+    public static bool IsSimulated(IScanDevice device, IReadOnlyCollection<IScanDevice>? simulated) =>
+        simulated?.Contains(device) == true;
 }
