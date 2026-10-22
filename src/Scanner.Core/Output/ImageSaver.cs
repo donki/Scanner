@@ -69,7 +69,7 @@ public static class ImageSaver
         };
         foreach (var page in pages)
         {
-            var image = Imaging.ImageOps.WithDpi(page.Image, page.Dpi);
+            var image = Imaging.ImageOps.WithDpi(Imaging.ImageOps.Detached(page.Image), page.Dpi);
             // JPEG no admite 1 bit: el blanco y negro va en gris (el PNG y el TIFF lo guardan en 1 bit).
             if (format == OutputFormat.Jpeg && image.Format == PixelFormats.BlackWhite)
                 image = Imaging.ImageOps.ToGray(image);

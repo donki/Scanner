@@ -1,5 +1,17 @@
 [
   {
+    "version": "2026.10.22.0",
+    "date": "2026-10-22",
+    "es": [
+      "Arreglado: lo escaneado con algunos escáneres (como una impresora multifunción por USB) no se podía guardar y salía un error. Ya se guarda en PDF, JPG, PNG, TIFF o BMP, una a una o en serie.",
+      "Al escáner ya no se le piden opciones que no tiene: el brillo, el contraste, la zona y la resolución se ajustan a lo que admite."
+    ],
+    "en": [
+      "Fixed: scans from some scanners (such as a multifunction printer over USB) could not be saved and showed an error. They now save as PDF, JPG, PNG, TIFF or BMP, one at a time or in a batch.",
+      "The scanner is no longer asked for options it does not have: brightness, contrast, area and resolution are kept within what it supports."
+    ]
+  },
+  {
     "version": "2026.10.21.0",
     "date": "2026-10-21",
     "es": [

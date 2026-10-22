@@ -163,6 +163,13 @@ public static class ImageOps
     }
 
     /// <summary>Copia los píxeles a un mapa propio: corta la cadena de transformaciones y deja la imagen congelada.</summary>
+    /// <summary>
+    /// Lista para usarse en cualquier hilo: congelada y sin decodificador detras. Un BitmapFrame leido de
+    /// un fichero, aunque este congelado, consulta a su decodificador (atado a su hilo) al codificarlo.
+    /// </summary>
+    public static BitmapSource Detached(BitmapSource image)
+        => image is BitmapFrame || !image.IsFrozen ? (image.CheckAccess() ? Materialize(image) : image.Dispatcher.Invoke(() => Materialize(image))) : image;
+
     public static BitmapSource Materialize(BitmapSource source)
     {
         var format = source.Format;

@@ -1,5 +1,26 @@
 # Changelog — sOC Scanner
 
+## 2026.10.22.0 — Guardar lo escaneado con escáneres de verdad · Saving scans from real scanners
+
+**Español**
+
+- **Arreglo: no se podía guardar** (PDF, ni en serie ni una a una) lo escaneado con una impresora multifunción por USB:
+  salía «The calling thread cannot access this object because a different thread owns it». La hoja
+  llegaba de un fichero y se quedaba atada al hilo que la leyó; ahora se copia al leerla y se guarda
+  sin problema en cualquier formato.
+- Las opciones que el escáner no admite ya no se le piden (brillo, contraste, zona y resolución se
+  ajustan a sus límites; el recorte automático y la doble cara solo si los tiene) y el registro dice
+  cuál ha rechazado, en vez de solo «El parámetro no es correcto».
+
+**English**
+
+- **Fix: scans could not be saved** (PDF, in series or one by one) with a multifunction printer over USB: «The
+  calling thread cannot access this object because a different thread owns it». The page came from a
+  file and stayed tied to the thread that read it; now it is copied when read and saves in any format.
+- Options the scanner does not support are no longer requested (brightness, contrast, area and
+  resolution are kept within its limits; auto-cropping and duplex only if it has them), and the log says
+  which one it rejected instead of just «The parameter is incorrect».
+
 ## 2026.10.21.0 — Primera versión · First version
 
 **Español**

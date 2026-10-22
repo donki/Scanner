@@ -213,3 +213,65 @@ public sealed class OutputTests
         }
     }
 }
+
+/// <summary>
+/// Una impresora multifunción por USB: la hoja llega como fichero, se lee en un hilo y se guarda en otro. Un BitmapFrame
+/// leido de un fichero sigue atado a su decodificador aunque este congelado, y guardar el PDF en segundo
+/// plano reventaba con «The calling thread cannot access this object because a different thread owns it»
+/// (registro de errores del 2026-10-21 y 2026-10-22).
+/// </summary>
+[Collection("Estado global")]
+public sealed class SaveFromOtherThreadTests
+{
+    private static BitmapSourceHolder ReadOnOwnThread(string path)
+    {
+        BitmapSourceHolder? holder = null;
+        var thread = new Thread(() =>
+        {
+            using var fs = File.OpenRead(path);
+            var decoder = System.Windows.Media.Imaging.BitmapDecoder.Create(fs, System.Windows.Media.Imaging.BitmapCreateOptions.PreservePixelFormat, System.Windows.Media.Imaging.BitmapCacheOption.OnLoad);
+            var frame = decoder.Frames[0];
+            frame.Freeze();
+            holder = new BitmapSourceHolder(frame);
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        return holder!;
+    }
+
+    private sealed record BitmapSourceHolder(System.Windows.Media.Imaging.BitmapSource Image);
+
+    [Theory]
+    [InlineData(OutputFormat.Pdf)]
+    [InlineData(OutputFormat.Jpeg)]
+    [InlineData(OutputFormat.Png)]
+    [InlineData(OutputFormat.Tiff)]
+    public async Task Una_hoja_leida_de_un_fichero_en_otro_hilo_se_guarda(OutputFormat format)
+    {
+        using var tmp = new TempFolder();
+        var source = tmp.File("escaneo.png");
+        ImageSaver.Save([Images.Page(ColorMode.Color, 90, 120, 150)], OutputFormat.Png, source, 85);
+        var frame = ReadOnOwnThread(source).Image;
+        Assert.IsAssignableFrom<System.Windows.Media.Imaging.BitmapFrame>(frame);   // como la de la multifunción por USB: un fotograma de decodificador
+        var page = new ScannedPage(frame, 150, ColorMode.Color);
+        var path = tmp.File("salida" + OutputFormats.Extension(format));
+        var saved = await Task.Run(() => ImageSaver.Save([page], format, path, 85));
+        Assert.True(File.Exists(saved[0]));
+        Assert.True(new FileInfo(saved[0]).Length > 100);
+    }
+
+    [Fact]
+    public void Detached_copia_los_fotogramas_y_deja_lo_demas()
+    {
+        using var tmp = new TempFolder();
+        var source = tmp.File("a.png");
+        ImageSaver.Save([Images.Page(ColorMode.Grayscale, 30, 40, 100)], OutputFormat.Png, source, 85);
+        var frame = ReadOnOwnThread(source).Image;
+        var copy = SocScanner.Imaging.ImageOps.Detached(frame);
+        Assert.IsNotAssignableFrom<System.Windows.Media.Imaging.BitmapFrame>(copy);
+        Assert.True(copy.IsFrozen);
+        Assert.Equal((30, 40), (copy.PixelWidth, copy.PixelHeight));
+        Assert.Same(copy, SocScanner.Imaging.ImageOps.Detached(copy));
+    }
+}

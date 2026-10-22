@@ -79,8 +79,8 @@ public sealed class WinRtScanner(ScanDeviceInfo info) : IScanDevice
             Configure(config, request);
         if (config is ImageScannerFeederConfiguration feeder)
         {
-            Try(() => feeder.MaxNumberOfPages = 0);   // todas las que haya
-            Try(() => feeder.Duplex = false);
+            Try("páginas del alimentador", () => feeder.MaxNumberOfPages = 0);   // todas las que haya
+            if (feeder.CanScanDuplex) Try("doble cara", () => feeder.Duplex = false);
         }
 
         var temp = Path.Combine(Path.GetTempPath(), "sOCScanner", Guid.NewGuid().ToString("N"));
@@ -126,22 +126,31 @@ public sealed class WinRtScanner(ScanDeviceInfo info) : IScanDevice
             _ => ImageScannerColorMode.Color,
         };
         if (config.IsColorModeSupported(mode))
-            Try(() => config.ColorMode = mode);
-        Try(() => config.DesiredResolution = new ImageScannerResolution { DpiX = r.Dpi, DpiY = r.Dpi });
-        if (r.DeviceBrightness is { } b) Try(() => config.Brightness = b);
-        if (r.DeviceContrast is { } c) Try(() => config.Contrast = c);
+            Try("modo de color", () => config.ColorMode = mode);
+        // Cada opcion dentro de lo que dice el propio escaner; lo que no tiene, no se pide.
+        var dpi = Math.Clamp((float)r.Dpi, config.MinResolution.DpiX, Math.Max(config.MinResolution.DpiX, config.MaxResolution.DpiX));
+        Try("resolución", () => config.DesiredResolution = new ImageScannerResolution { DpiX = dpi, DpiY = dpi });
+        if (r.DeviceBrightness is { } b && config.MaxBrightness > config.MinBrightness)
+            Try("brillo", () => config.Brightness = Math.Clamp(b, config.MinBrightness, config.MaxBrightness));
+        if (r.DeviceContrast is { } c && config.MaxContrast > config.MinContrast)
+            Try("contraste", () => config.Contrast = Math.Clamp(c, config.MinContrast, config.MaxContrast));
         if (r.AreaInches is var (w, h))
-            Try(() => config.SelectedScanRegion = new WinRect(0, 0, w, h));
-        Try(() => config.AutoCroppingMode = ImageScannerAutoCroppingMode.Disabled);
+        {
+            var max = config.MaxScanArea;
+            if (max.Width > 0 && max.Height > 0)
+                Try("zona de escaneo", () => config.SelectedScanRegion = new WinRect(0, 0, Math.Min(w, max.Width), Math.Min(h, max.Height)));
+        }
+        if (config.IsAutoCroppingModeSupported(ImageScannerAutoCroppingMode.Disabled))
+            Try("recorte automático", () => config.AutoCroppingMode = ImageScannerAutoCroppingMode.Disabled);
     }
 
     private static BitmapSource Decode(string path)
     {
         using var fs = File.OpenRead(path);
         var decoder = BitmapDecoder.Create(fs, BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.OnLoad);
-        var frame = decoder.Frames[0];
-        frame.Freeze();
-        return frame;
+        // Una copia de los pixeles, no el fotograma: el fotograma sigue atado al hilo de su decodificador
+        // aunque se congele, y al guardar en segundo plano WPF lo rechazaba («different thread owns it»).
+        return ImageOps.Materialize(decoder.Frames[0]);
     }
 
     private async Task<ImageScanner> OpenAsync(CancellationToken ct)
@@ -159,10 +168,10 @@ public sealed class WinRtScanner(ScanDeviceInfo info) : IScanDevice
     }
 
     /// <summary>Una opción que el controlador rechaza no impide escanear: se escanea con la suya.</summary>
-    private static void Try(Action set)
+    private static void Try(string option, Action set)
     {
         try { set(); }
-        catch (Exception ex) { AppLog.Write($"opción del escáner no admitida: {ex.Message}"); }
+        catch (Exception ex) { AppLog.Write($"opción del escáner no admitida ({option}): {ex.Message.Trim()}"); }
     }
 
     public void Dispose()

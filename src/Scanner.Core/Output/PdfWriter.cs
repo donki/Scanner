@@ -73,7 +73,7 @@ public static class PdfWriter
 
     internal static (byte[] Data, string Filter, string ColorSpace, int Bits) EncodeImage(ScannedPage page, int jpegQuality)
     {
-        var image = page.Image;
+        var image = Imaging.ImageOps.Detached(page.Image);
         if (image.Format == PixelFormats.BlackWhite)
         {
             int w = image.PixelWidth, h = image.PixelHeight;
