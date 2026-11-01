@@ -1,5 +1,17 @@
 # Changelog — sOC Scanner
 
+## 2026.11.1.0 — Microsoft Store
+
+**Español**
+
+- **Microsoft Store**: paquete MSIX (`tools\empaquetar-msix.ps1`, declara la cámara) con imágenes y
+  fichas en `store/microsoft` (`tools\generar-icono.ps1` y `tools\capturas-store.py`).
+
+**English**
+
+- **Microsoft Store**: MSIX package (`tools\empaquetar-msix.ps1`, declares the webcam) with images and
+  listings in `store/microsoft` (`tools\generar-icono.ps1` and `tools\capturas-store.py`).
+
 ## 2026.10.22.0 — Guardar lo escaneado con escáneres de verdad · Saving scans from real scanners
 
 **Español**
