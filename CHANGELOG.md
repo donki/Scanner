@@ -1,6 +1,6 @@
 # Changelog — sOC Scanner
 
-## 2026.11.1.0 — Microsoft Store
+## 2026.11.1.1 — Microsoft Store
 
 **Español**
 
