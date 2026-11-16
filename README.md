@@ -8,7 +8,8 @@ PNG, TIFF o BMP**.
 
 - **GitHub**: el exe autocontenido de cada versión en
   [Releases](https://github.com/donki/Scanner/releases) (sin instalar: doble clic).
-- **Microsoft Store**: aún no.
+- **Microsoft Store**: https://apps.microsoft.com/detail/9N9S5ZP2SG54 (se instala y se
+  actualiza desde allí).
 
 ## Qué hace
 
